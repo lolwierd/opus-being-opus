@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ephemera</title>
+  <title>2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
@@ -112,14 +112,179 @@
         transform: translateY(-100px) scale(0.5);
       }
     }
+
+    #year {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(80px, 20vw, 200px);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.03);
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #countdown {
+      position: fixed;
+      top: 40px;
+      left: 40px;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 14px;
+      letter-spacing: 2px;
+      z-index: 100;
+    }
+
+    #countdown .time {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 5px;
+    }
+
+    #intention-prompt {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+
+    #intention-prompt.visible {
+      opacity: 1;
+    }
+
+    #intention-prompt label {
+      display: block;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 12px;
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      text-transform: lowercase;
+    }
+
+    #intention-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      padding: 10px 20px;
+      width: 300px;
+      max-width: 80vw;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    #intention-input::placeholder {
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    #intention-input:focus {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .intention-float {
+      position: fixed;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 20px;
+      font-style: italic;
+      pointer-events: none;
+      z-index: 150;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+      animation: intention-rise 8s ease-out forwards;
+    }
+
+    @keyframes intention-rise {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        opacity: 0.8;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-300px) scale(0.6);
+      }
+    }
+
+    .shooting-star {
+      position: fixed;
+      width: 100px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
+      pointer-events: none;
+      z-index: 50;
+      animation: shoot 1s ease-out forwards;
+    }
+
+    @keyframes shoot {
+      0% {
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(300px) translateY(150px);
+      }
+    }
+
+    #milestone {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+
+    #milestone.visible {
+      opacity: 1;
+    }
+
+    #milestone .number {
+      font-size: clamp(60px, 15vw, 120px);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+    }
+
+    #milestone .label {
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
+  <div id="year">2026</div>
   <div id="cursor"></div>
-  <div id="message">move through the darkness</div>
+  <div id="countdown">
+    <div class="label"></div>
+    <div class="time"></div>
+  </div>
+  <div id="message">click to begin your year</div>
   <div id="poem"></div>
   <div id="counter"></div>
+  <div id="intention-prompt">
+    <label>set an intention for 2026</label>
+    <input type="text" id="intention-input" placeholder="i will..." maxlength="50">
+  </div>
+  <div id="milestone">
+    <div class="number"></div>
+    <div class="label"></div>
+  </div>
 
   <script>
     const canvas = document.getElementById('canvas');
@@ -128,6 +293,10 @@
     const message = document.getElementById('message');
     const poemEl = document.getElementById('poem');
     const counterEl = document.getElementById('counter');
+    const countdownEl = document.getElementById('countdown');
+    const intentionPrompt = document.getElementById('intention-prompt');
+    const intentionInput = document.getElementById('intention-input');
+    const milestoneEl = document.getElementById('milestone');
 
     let width, height;
     let mouseX = 0, mouseY = 0;
@@ -135,23 +304,37 @@
     let connections = [];
     let clickCount = 0;
     let totalMoments = 0;
+    let intentionsSet = [];
 
     const fragments = [
-      "memory", "breath", "shadow", "echo", "dawn",
-      "silence", "wonder", "dream", "dust", "light",
-      "hope", "time", "space", "void", "soul",
-      "whisper", "moment", "eternity", "presence", "absence",
-      "here", "now", "then", "always", "never",
-      "beginning", "ending", "between", "within", "beyond"
+      "grow", "build", "create", "become", "rise",
+      "begin", "transform", "achieve", "discover", "bloom",
+      "shine", "thrive", "manifest", "evolve", "flourish",
+      "courage", "strength", "focus", "clarity", "purpose",
+      "yes", "now", "ready", "capable", "unstoppable"
     ];
 
     const poems = [
-      "what remains<br>when everything<br>has been forgotten",
-      "between each breath<br>a universe<br>collapses and begins",
-      "we are made<br>of the spaces<br>between stars",
-      "time moves through us<br>like light through water<br>leaving nothing unchanged",
-      "in the silence<br>between thoughts<br>you are infinite"
+      "this year belongs to you<br>every single day<br>is a chance to begin again",
+      "you are not behind<br>you are not ahead<br>you are exactly where you need to be",
+      "the person you're becoming<br>will be worth<br>the wait",
+      "small steps<br>still move you forward<br>keep going",
+      "you have survived<br>100% of your worst days<br>you're doing better than you think",
+      "2026 doesn't need you<br>to be perfect<br>just present",
+      "your energy is valuable<br>spend it on what<br>makes you come alive",
+      "rest is not giving up<br>it's how you prepare<br>to go further"
     ];
+
+    const milestones = {
+      10: "warming up",
+      25: "finding your rhythm",
+      50: "in the zone",
+      100: "unstoppable",
+      200: "on fire",
+      365: "one for every day of 2026",
+      500: "legendary",
+      1000: "transcendent"
+    };
 
     function resize() {
       width = canvas.width = window.innerWidth;
@@ -267,6 +450,94 @@
       setTimeout(() => poemEl.classList.remove('visible'), 6000);
     }
 
+    function updateCountdown() {
+      const now = new Date();
+      const year2026 = new Date('2026-01-01T00:00:00');
+      const endOf2026 = new Date('2027-01-01T00:00:00');
+
+      let label, timeStr;
+
+      if (now < year2026) {
+        // Countdown to 2026
+        const diff = year2026 - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        label = '2026 begins in';
+        if (days > 0) {
+          timeStr = `${days}d ${hours}h ${mins}m`;
+        } else {
+          timeStr = `${hours}h ${mins}m ${secs}s`;
+        }
+      } else if (now < endOf2026) {
+        // We're in 2026
+        const dayOfYear = Math.floor((now - year2026) / (1000 * 60 * 60 * 24)) + 1;
+        const daysLeft = 365 - dayOfYear;
+        label = `day ${dayOfYear} of 2026`;
+        timeStr = `${daysLeft} days of possibility remain`;
+      } else {
+        label = 'beyond 2026';
+        timeStr = 'the journey continues';
+      }
+
+      countdownEl.querySelector('.label').textContent = label;
+      countdownEl.querySelector('.time').textContent = timeStr;
+    }
+
+    function createShootingStar() {
+      const star = document.createElement('div');
+      star.className = 'shooting-star';
+      star.style.left = Math.random() * width * 0.7 + 'px';
+      star.style.top = Math.random() * height * 0.5 + 'px';
+      star.style.transform = `rotate(${30 + Math.random() * 20}deg)`;
+      document.body.appendChild(star);
+      setTimeout(() => star.remove(), 1000);
+    }
+
+    function showMilestone(count) {
+      if (milestones[count]) {
+        milestoneEl.querySelector('.number').textContent = count;
+        milestoneEl.querySelector('.label').textContent = milestones[count];
+        milestoneEl.classList.add('visible');
+
+        // Burst of particles
+        for (let i = 0; i < 50; i++) {
+          setTimeout(() => {
+            particles.push(new Particle(width/2, height/2, true));
+          }, i * 20);
+        }
+
+        // Multiple shooting stars
+        for (let i = 0; i < 5; i++) {
+          setTimeout(createShootingStar, i * 200);
+        }
+
+        setTimeout(() => milestoneEl.classList.remove('visible'), 3000);
+      }
+    }
+
+    function floatIntention(text) {
+      const el = document.createElement('div');
+      el.className = 'intention-float';
+      el.textContent = text;
+      el.style.left = width / 2 + 'px';
+      el.style.top = height / 2 + 'px';
+      el.style.transform = 'translate(-50%, -50%)';
+      document.body.appendChild(el);
+
+      // Burst of golden particles
+      for (let i = 0; i < 30; i++) {
+        const p = new Particle(width/2, height/2, true);
+        p.hue = 45; // golden
+        p.saturation = 80;
+        particles.push(p);
+      }
+
+      setTimeout(() => el.remove(), 8000);
+    }
+
     function animate() {
       ctx.fillStyle = 'rgba(10, 10, 12, 0.1)';
       ctx.fillRect(0, 0, width, height);
@@ -306,6 +577,9 @@
     });
 
     document.addEventListener('click', (e) => {
+      // Don't count clicks on the input
+      if (e.target === intentionInput) return;
+
       clickCount++;
       totalMoments++;
       counterEl.textContent = `moments: ${totalMoments}`;
@@ -325,14 +599,43 @@
         }, i * 200);
       }
 
-      // Show poem every 5 clicks
-      if (clickCount % 5 === 0) {
+      // Show poem every 7 clicks
+      if (clickCount % 7 === 0) {
         showPoem();
+      }
+
+      // Check for milestones
+      showMilestone(totalMoments);
+
+      // Show intention prompt after 3 clicks
+      if (clickCount === 3) {
+        intentionPrompt.classList.add('visible');
       }
 
       // Fade hint message
       if (clickCount === 1) {
         message.style.opacity = '0';
+      }
+
+      // Random shooting star
+      if (Math.random() < 0.1) {
+        createShootingStar();
+      }
+    });
+
+    // Intention input handler
+    intentionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && intentionInput.value.trim()) {
+        const intention = intentionInput.value.trim();
+        intentionsSet.push(intention);
+        floatIntention(intention);
+        intentionInput.value = '';
+        intentionInput.placeholder = 'add another...';
+
+        // Show encouraging message
+        setTimeout(() => {
+          showPoem();
+        }, 1000);
       }
     });
 
@@ -347,6 +650,9 @@
     }, { passive: false });
 
     document.addEventListener('touchstart', (e) => {
+      // Don't process if touching the input
+      if (e.target === intentionInput) return;
+
       const touch = e.touches[0];
       mouseX = touch.clientX;
       mouseY = touch.clientY;
@@ -372,12 +678,25 @@
         }, i * 200);
       }
 
-      if (clickCount % 5 === 0) {
+      if (clickCount % 7 === 0) {
         showPoem();
+      }
+
+      // Check for milestones
+      showMilestone(totalMoments);
+
+      // Show intention prompt after 3 clicks
+      if (clickCount === 3) {
+        intentionPrompt.classList.add('visible');
       }
 
       if (clickCount === 1) {
         message.style.opacity = '0';
+      }
+
+      // Random shooting star
+      if (Math.random() < 0.1) {
+        createShootingStar();
       }
     });
 
@@ -387,6 +706,17 @@
 
     init();
     animate();
+
+    // Start countdown updates
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    // Random shooting stars
+    setInterval(() => {
+      if (Math.random() < 0.3) {
+        createShootingStar();
+      }
+    }, 3000);
   </script>
 </body>
 </html>
